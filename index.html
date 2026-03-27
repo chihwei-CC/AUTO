@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Auto 工資報價系統</title>
+  <style>
+    :root { --primary: #2c3e50; --accent: #e74c3c; --side: #34495e; --orange: #f39c12; }
+    body { font-family: sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; background: #f4f7f6; }
+    .sidebar { width: 130px; background: var(--side); color: #fff; display: flex; flex-direction: column; flex-shrink: 0; }
+    .side-header { padding: 15px 10px; font-size: 14px; font-weight: bold; background: #2c3e50; text-align: center; }
+    .btn-wrap { flex: 1; overflow-y: auto; padding: 6px; display: flex; flex-wrap: wrap; gap: 5px; align-content: flex-start; }
+    .btn { width: calc(50% - 3px); padding: 12px 0; background: #4b6584; border: none; color: #fff; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: bold; }
+    .btn-full { width: 100%; padding: 14px 0; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 14px; margin-bottom: 8px; color: #fff; }
+    .btn-ins { background: var(--orange); }
+    .btn-v { background: #f1c40f; color: #000; margin-top: 15px; } 
+    .btn-w { background: #3498db; margin-top: 5px; }
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .search-bar { background: #fff; padding: 12px; border-bottom: 1px solid #ddd; display: flex; gap: 8px; }
+    .search-bar input { flex: 1; padding: 12px; border: 2px solid #eee; border-radius: 6px; font-size: 15px; outline: none; }
+    .content { flex: 1; overflow-y: auto; padding: 15px; }
+    .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #ddd; border-radius: 8px; overflow: hidden; margin-top: 15px; border: 1px solid #ddd; }
+    .price-card { background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px 0; }
+    .p-label { color: #7f8c8d; font-size: 12px; margin-bottom: 5px; }
+    .p-val { color: var(--accent); font-size: 32px; font-weight: bold; cursor: pointer; text-align: center; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; }
+    td { padding: 14px 10px; border-bottom: 1px solid #f0f0f0; font-size: 15px; }
+    .c-code { color: var(--accent); font-weight: bold; width: 85px; cursor: pointer; }
+    #loader { padding: 10px; text-align: center; color: var(--accent); font-weight: bold; background: #fffbe6; font-size: 13px; display: none; }
+    #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 20px; display: none; z-index: 1000; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="side-header">功能快選</div>
+  <div class="btn-wrap">
+    <button class="btn btn-full btn-ins" onclick="showIns()">保險報價查詢</button>
+    <button class="btn" onclick="goStd('A')">前保A</button>
+    <button class="btn" onclick="goStd('B')">左前葉B</button>
+    <button class="btn" onclick="goStd('C')">引擎蓋C</button>
+    <button class="btn" onclick="goStd('D')">右前葉D</button>
+    <button class="btn" onclick="goStd('E')">左戶定E</button>
+    <button class="btn" onclick="goStd('F')">左前門F</button>
+    <button class="btn" onclick="goStd('G')">左後門G</button>
+    <button class="btn" onclick="goStd('H')">車頂蓋H</button>
+    <button class="btn" onclick="goStd('I')">右前門I</button>
+    <button class="btn" onclick="goStd('J')">右後門J</button>
+    <button class="btn" onclick="goStd('K')">右戶定K</button>
+    <button class="btn" onclick="goStd('L')">左後葉L</button>
+    <button class="btn" onclick="goStd('M')">後箱蓋M</button>
+    <button class="btn" onclick="goStd('N')">右後葉N</button>
+    <button class="btn" onclick="goStd('O')">後保O</button>
+    <button class="btn btn-full btn-v" onclick="goStd('V')">常用項目 V</button>
+    <button class="btn btn-full btn-w" onclick="goStd('W')">特殊零件 W</button>
+  </div>
+</div>
+
+<div class="main">
+  <div id="loader">同步資料中...</div>
+  <div class="search-bar">
+    <input type="text" id="kw" placeholder="搜尋工資代碼或說明..." oninput="goStd(this.value)">
+  </div>
+
+  <div id="viewStd" class="content">
+    <table id="resStd"><tr><td style="text-align:center; padding-top:50px; color:#999;">請等待資料同步完成</td></tr></table>
+  </div>
+
+  <div id="viewIns" class="content hidden">
+    <div style="background:#fff; padding:15px; border-radius:8px; border:1px solid #ddd;">
+      <select id="selCar" onchange="getIns()" style="width:100%; padding:10px; font-size:16px;"><option value="">-- 選車型 --</option></select>
+      <select id="selPart" onchange="getIns()" style="width:100%; padding:10px; font-size:16px; margin-top:10px;"><option value="">-- 選零件 --</option></select>
+    </div>
+    <div id="resPrice" class="hidden"></div>
+    <div id="syncStdContainer" class="hidden">
+      <div style="padding:15px 0 5px 5px; font-weight:bold; color:var(--orange);">對應工資代碼</div>
+      <table id="resStdUnderIns"></table>
+    </div>
+  </div>
+</div>
+
+<div id="toast">已複製</div>
+
+<script>
+  // 🔴 請在此貼上您的 Google Apps Script 部署網址
+  const API_URL = "https://script.google.com/macros/s/AKfycbxKVn1d2DzAoC8g8XTI0gbwz4d8xS7Ol3cvguoakNnY9k80vbdq2LVbbXw0Z5sdstAw/exec"; 
+  let localData = []; 
+
+  window.onload = () => {
+    const loader = document.getElementById('loader');
+    loader.style.display = 'block';
+    
+    // 同步 4 萬筆資料
+    fetch(`${API_URL}?action=getAllStdData`)
+      .then(res => res.json())
+      .then(data => {
+        localData = data;
+        loader.style.display = 'none';
+        document.getElementById('resStd').innerHTML = '<tr><td style="text-align:center; padding-top:50px; color:green;">✓ 同步成功，請開始查詢</td></tr>';
+      });
+
+    // 載入選單
+    fetch(`${API_URL}?action=getCarModels`).then(r => r.json()).then(l => l.forEach(m => document.getElementById('selCar').add(new Option(m,m))));
+    fetch(`${API_URL}?action=getPartNames`).then(r => r.json()).then(l => l.forEach(p => document.getElementById('selPart').add(new Option(p,p))));
+  };
+
+  function goStd(val, targetTableId = 'resStd') {
+    if(!val || localData.length === 0) return;
+    if(targetTableId === 'resStd') {
+      document.getElementById('viewStd').classList.remove('hidden');
+      document.getElementById('viewIns').classList.add('hidden');
+    }
+    const k = val.trim().toUpperCase();
+    let filtered = (k.length === 1 && /^[A-Z]$/.test(k)) 
+      ? localData.filter(r => String(r[1]).toUpperCase() === k)
+      : localData.filter(r => String(r[0]).toUpperCase().includes(k) || String(r[2]).toUpperCase().includes(k));
+    
+    const uniqueMap = new Map();
+    filtered.forEach(item => { uniqueMap.set(item[0] + "|" + item[2], item); });
+    const finalData = Array.from(uniqueMap.values());
+    const table = document.getElementById(targetTableId);
+    table.innerHTML = finalData.slice(0, 60).map(i => `<tr><td class="c-code" onclick="cp('${i[0]}')">${i[0]}</td><td>${i[2]}</td></tr>`).join('');
+  }
+
+  function showIns() {
+    document.getElementById('viewStd').classList.add('hidden');
+    document.getElementById('viewIns').classList.remove('hidden');
+  }
+
+  function getIns() {
+    const car = document.getElementById('selCar').value, part = document.getElementById('selPart').value;
+    const resPrice = document.getElementById('resPrice'), syncContainer = document.getElementById('syncStdContainer');
+    if(!car || !part) return;
+
+    document.getElementById('kw').value = part;
+    syncContainer.classList.remove('hidden');
+    goStd(part, 'resStdUnderIns');
+
+    resPrice.classList.remove('hidden'); 
+    resPrice.innerHTML = '<div style="padding:20px; text-align:center">查詢中...</div>';
+
+    fetch(`${API_URL}?action=getInsurancePrice&car=${encodeURIComponent(car)}&part=${encodeURIComponent(part)}`)
+      .then(r => r.json())
+      .then(p => {
+        if(!p) { resPrice.innerHTML = '<div style="padding:20px; text-align:center">無資料</div>'; return; }
+        resPrice.innerHTML = `
+          <div style="background:#2c3e50; color:#fff; padding:10px; text-align:center; border-radius:8px 8px 0 0; margin-top:15px; font-weight:bold;">${car} - ${part}</div>
+          <div class="price-grid">
+            <div class="price-card"><span class="p-label">一般塗裝</span><span class="p-val" onclick="cp('${p['一般']}')">${p['一般']}</span></div>
+            <div class="price-card"><span class="p-label">水晶塗裝</span><span class="p-val" onclick="cp('${p['水晶']}')">${p['水晶']}</span></div>
+            <div class="price-card"><span class="p-label">水性塗裝</span><span class="p-val" onclick="cp('${p['水性']}')">${p['水性']}</span></div>
+            <div class="price-card"><span class="p-label">拆裝工資</span><span class="p-val" onclick="cp('${p['拆裝']}')">${p['拆裝']}</span></div>
+          </div>`;
+      });
+  }
+
+  function cp(t) {
+    if(t === "0" || t === "") return;
+    const el = document.createElement('textarea'); el.value = t; document.body.appendChild(el);
+    el.select(); document.execCommand('copy'); document.body.removeChild(el);
+    const ts = document.getElementById('toast'); ts.style.display = 'block';
+    setTimeout(() => ts.style.display = 'none', 1000);
+  }
+</script>
+</body>
+</html>
